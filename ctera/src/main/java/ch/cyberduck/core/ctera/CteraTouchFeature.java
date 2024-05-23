@@ -27,6 +27,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.text.MessageFormat;
 
+import static ch.cyberduck.core.ctera.CteraAttributesFinderFeature.CREATEDIRECTORIESPERMISSION;
+import static ch.cyberduck.core.ctera.CteraAttributesFinderFeature.assumeRole;
+
 public class CteraTouchFeature extends DAVTouchFeature {
 
     private static final Logger log = LogManager.getLogger(CteraTouchFeature.class);
@@ -40,7 +43,12 @@ public class CteraTouchFeature extends DAVTouchFeature {
         if(!validate(filename)) {
             throw new InvalidFilenameException(MessageFormat.format(LocaleFactory.localizedString("Cannot create {0}", "Error"), filename));
         }
-        // no createfilespermission required for now
+        // Directories with Write permission also have CreateDirectories permission,
+        //      as CreateDirectories implies CreateDirectories=AppendData (4),
+        //      see https://learn.microsoft.com/en-us/dotnet/api/system.security.accesscontrol.filesystemrights?view=net-8.0
+        // Directories with CreateDirectories but no Write permission allow for file creation.
+        // Directories with only Read permission do not allow for file creation.
+        assumeRole(workdir, CREATEDIRECTORIESPERMISSION);
     }
 
     public static boolean validate(final String filename) {
